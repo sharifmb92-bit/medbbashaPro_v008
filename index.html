@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    <meta name="theme-color" content="#0f172a">
+    <title>Med Basha Pro - Master Final</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
+
+    <style>
+        [x-cloak] { display: none !important; }
+        :root { --app-font-size: 14px; --bg-input: rgba(15, 23, 42, 0.8); }
+        body { 
+            background-color: #0f172a; color: #f8fafc; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            font-size: var(--app-font-size);
+            height: 100vh; overflow: hidden; margin: 0; 
+        }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1.25rem; }
+        .input-field { background: var(--bg-input); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; transition: background 0.4s ease; }
+        input { background: transparent; outline: none; text-align: center; color: white; width: 100%; font-weight: bold; }
+        input[type="time"] { color-scheme: dark; font-weight: 800; }
+        .btn-press:active { transform: scale(0.95); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body x-data="medBashaApp()" x-init="init()" :style="'--app-font-size: ' + fontSize + 'px; --bg-input: ' + accentColor" x-cloak>
+
+    <template x-if="screen === 1">
+        <div class="flex flex-col h-full p-4 space-y-4">
+            <header class="flex justify-between items-end">
+                <div>
+                    <h1 class="font-extrabold tracking-tighter italic text-white" :style="'font-size: ' + (fontSize * 1.8) + 'px'">MED BASHA <span class="text-blue-500 not-italic text-sm">PRO</span></h1>
+                    <p class="font-bold text-slate-500 uppercase tracking-widest" :style="'font-size: ' + (fontSize * 0.6) + 'px'">Conductor Menorca | Revisión Completa</p>
+                </div>
+                <button @click="screen = 4" class="p-2 glass-card text-slate-400 btn-press"><span class="material-symbols-rounded">palette</span></button>
+            </header>
+
+            <div class="glass-card p-4">
+                <div class="flex justify-between items-center mb-4 text-blue-400 uppercase font-extrabold" :style="'font-size: ' + (fontSize * 0.8) + 'px'">
+                    <span x-text="mesNombre + ' ' + año"></span>
+                    <div class="flex gap-4">
+                        <button @click="cambiarMes(-1)" class="p-1"><span class="material-symbols-rounded">chevron_left</span></button>
+                        <button @click="cambiarMes(1)" class="p-1"><span class="material-symbols-rounded">chevron_right</span></button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center">
+                    <template x-for="dia in diasCalendario" :key="dia.fecha">
+                        <div @click="seleccionarDia(dia.fecha)" class="py-2 flex flex-col items-center rounded-xl cursor-pointer" :class="dia.fecha === fechaSel ? 'bg-blue-500/20' : ''">
+                            <span :class="dia.isHoy ? 'bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center' : 'text-slate-400'" class="font-bold" :style="'font-size: ' + (fontSize * 0.8) + 'px'" x-text="dia.num"></span>
+                            <div class="flex gap-0.5 mt-1 h-1">
+                                <template x-if="estadoDia(dia.fecha) === 'continua'"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div></template>
+                                <template x-if="estadoDia(dia.fecha) === 'partida'"><div class="w-1.5 h-1.5 rounded-full bg-orange-500"></div></template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button @click="abrirRegistro(false)" class="glass-card p-5 btn-press border-b-4 border-b-blue-600 flex flex-col items-center">
+                    <span class="material-symbols-rounded text-blue-500 text-3xl">timer</span>
+                    <p class="font-black mt-2 text-slate-300 uppercase" :style="'font-size: ' + (fontSize * 0.7) + 'px'">Continua</p>
+                </button>
+                <button @click="abrirRegistro(true)" class="glass-card p-5 btn-press border-b-4 border-b-orange-600 flex flex-col items-center">
+                    <span class="material-symbols-rounded text-orange-500 text-3xl">wb_twilight</span>
+                    <p class="font-black mt-2 text-slate-300 uppercase" :style="'font-size: ' + (fontSize * 0.7) + 'px'">Partida</p>
+                </button>
+            </div>
+
+            <div class="flex-grow flex flex-col items-center justify-center" @click="screen = 3">
+                <h2 class="font-black text-white" :style="'font-size: ' + (fontSize * 5) + 'px'" x-text="reloj"></h2>
+                <div class="flex items-center gap-2 text-blue-400 font-bold uppercase tracking-widest mt-2" :style="'font-size: ' + (fontSize * 0.6) + 'px'">
+                    <span class="material-symbols-rounded text-sm">history</span>
+                    <span>Toca para ver historial</span>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template x-if="screen === 2">
+        <div class="flex flex-col h-full p-4 space-y-4 overflow-hidden">
+            <header class="flex items-center justify-between">
+                <button @click="screen = 1" class="p-2 btn-press"><span class="material-symbols-rounded text-slate-400">arrow_back</span></button>
+                <span class="font-black uppercase text-blue-400" :style="'font-size: ' + (fontSize * 0.8) + 'px'" x-text="formatFechaLarga(fechaSel)"></span>
+                <div class="w-10"></div>
+            </header>
+
+            <div class="flex-grow space-y-4 overflow-y-auto no-scrollbar pb-44">
+                <div class="glass-card p-4 space-y-4 border-l-4 border-l-blue-500">
+                    <div class="flex justify-between items-center">
+                        <span class="font-black uppercase text-slate-400" :style="'font-size: ' + (fontSize * 0.7) + 'px'">Registro Jornada</span>
+                        <div class="w-24 py-1 input-field"><input type="text" x-model="form.bus1" placeholder="BUS" class="text-yellow-500 uppercase"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="input-field p-2"><label class="text-slate-500 uppercase block font-bold" :style="'font-size: ' + (fontSize * 0.5) + 'px'">Entrada</label><input type="time" x-model="form.hE1" @input="calc()"></div>
+                        <div class="input-field p-2"><label class="text-slate-500 uppercase block font-bold" :style="'font-size: ' + (fontSize * 0.5) + 'px'">Salida</label><input type="time" x-model="form.hS1" @input="calc()"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="input-field p-2"><label class="text-cyan-600 uppercase block font-bold" :style="'font-size: ' + (fontSize * 0.5) + 'px'">KM Inicio</label><input type="number" x-model="form.kI1" @input="calc()"></div>
+                        <div class="input-field p-2"><label class="text-cyan-600 uppercase block font-bold" :style="'font-size: ' + (fontSize * 0.5) + 'px'">KM Fin</label><input type="number" x-model="form.kF1" @input="calc()"></div>
+                    </div>
+                </div>
+
+                <template x-if="form.esP">
+                    <div class="glass-card p-4 space-y-4 border-l-4 border-l-orange-500">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black uppercase text-slate-400" :style="'font-size: ' + (fontSize * 0.7) + 'px'">Segundo Bloque</span>
+                            <div class="w-24 py-1 input-field"><input type="text" x-model="form.bus2" placeholder="BUS" class="text-yellow-500 uppercase"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="input-field p-2"><label class="text-slate-500 uppercase block font-bold" :style="'font-size: ' + (fontSize * 0.5) + 'px'">Entrada</label><input type="time" x-model="form.hE2" @input="calc()"></div>
+                            <div class="input-field p-2"><label class="text-slate-500 uppercase block font-bold" :style="'font-size: ' + (fontSize * 0.5) + 'px'">Salida</label><input type="time" x-model="form.hS2" @input="calc()"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="input-field p-2"><label class="text-cyan-600 uppercase block font-bold" :style="'font-size: ' + (fontSize * 0.5) + 'px'">KM Inicio</label><input type="number" x-model="form.kI2" @input="calc()"></div>
+                            <div class="input-field p-2"><label class="text-cyan-600 uppercase block font-bold" :style="'font-size: ' + (fontSize * 0.5) + 'px'">KM Fin</label><input type="number" x-model="form.kF2" @input="calc()"></div>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button @click="form.dietaComida = !form.dietaComida" 
+                        class="p-4 rounded-2xl flex flex-col items-center border-2 transition-all btn-press"
+                        :class="form.dietaComida ? 'bg-green-600/20 border-green-500 text-green-400 shadow-lg' : 'glass-card border-transparent text-slate-500 opacity-60'">
+                        <span class="material-symbols-rounded text-3xl">restaurant</span>
+                        <span class="font-black uppercase mt-1" :style="'font-size: ' + (fontSize * 0.6) + 'px'">Comida</span>
+                    </button>
+                    <button @click="form.dietaCena = !form.dietaCena" 
+                        class="p-4 rounded-2xl flex flex-col items-center border-2 transition-all btn-press"
+                        :class="form.dietaCena ? 'bg-green-600/20 border-green-500 text-green-400 shadow-lg' : 'glass-card border-transparent text-slate-500 opacity-60'">
+                        <span class="material-symbols-rounded text-3xl">dinner_dining</span>
+                        <span class="font-black uppercase mt-1" :style="'font-size: ' + (fontSize * 0.6) + 'px'">Cena</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="fixed bottom-0 left-0 w-full p-4 bg-slate-900/90 backdrop-blur-md border-t border-white/5">
+                <button @click="guardar()" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-white text-sm uppercase tracking-widest shadow-lg shadow-blue-600/40 btn-press">Confirmar Registro</button>
+            </div>
+        </div>
+    </template>
+
+    <template x-if="screen === 3">
+        <div class="flex flex-col h-full p-4 space-y-4 overflow-hidden">
+            <header class="flex items-center justify-between">
+                <button @click="screen = 1" class="p-2 btn-press text-slate-400"><span class="material-symbols-rounded">arrow_back</span></button>
+                <h2 class="font-black uppercase tracking-widest text-blue-400" :style="'font-size: ' + (fontSize * 0.7) + 'px'">Resumen Nómina Ciclo</h2>
+                <button @click="compartir()" class="p-2 text-green-500 btn-press"><span class="material-symbols-rounded">share</span></button>
+            </header>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div class="glass-card p-3 text-center border-l-4 border-l-blue-600"><p class="text-slate-500 uppercase font-bold" :style="'font-size: ' + (fontSize * 0.5) + 'px'">Horas</p><p class="text-white font-black" :style="'font-size: ' + (fontSize * 1.5) + 'px'" x-text="totalMes.h"></p></div>
+                <div class="glass-card p-3 text-center border-l-4 border-l-orange-500"><p class="text-slate-500 uppercase font-bold" :style="'font-size: ' + (fontSize * 0.5) + 'px'">Partidas</p><p class="text-white font-black" :style="'font-size: ' + (fontSize * 1.5) + 'px'" x-text="totalMes.p"></p></div>
+                <div class="glass-card p-3 text-center border-l-4 border-l-green-500"><p class="text-slate-500 uppercase font-bold" :style="'font-size: ' + (fontSize * 0.5) + 'px'">Dietas</p><p class="text-white font-black" :style="'font-size: ' + (fontSize * 1.5) + 'px'" x-text="totalMes.d"></p></div>
+                <div class="glass-card p-3 text-center border-l-4 border-l-yellow-600"><p class="text-slate-500 uppercase font-bold" :style="'font-size: ' + (fontSize * 0.5) + 'px'">Nocturnas</p><p class="text-white font-black" :style="'font-size: ' + (fontSize * 1.5) + 'px'" x-text="totalMes.n"></p></div>
+            </div>
+
+            <div class="flex-grow overflow-y-auto space-y-4 pb-20 no-scrollbar">
+                <p class="font-black text-slate-500 uppercase ml-2" :style="'font-size: ' + (fontSize * 0.6) + 'px'">Desglose por Semanas</p>
+                <template x-for="sem in historiaSemanas" :key="sem.num">
+                    <div class="glass-card overflow-hidden">
+                        <div class="bg-white/5 px-4 py-2 flex justify-between items-center border-b border-white/5">
+                            <span class="font-black text-blue-400 uppercase" :style="'font-size: ' + (fontSize * 0.7) + 'px'" x-text="'Semana ' + sem.num"></span>
+                            <span class="font-bold text-slate-400" :style="'font-size: ' + (fontSize * 0.6) + 'px'" x-text="sem.tH.toFixed(2) + 'h'"></span>
+                        </div>
+                        <table class="w-full text-center">
+                            <thead class="uppercase font-black opacity-40 bg-black/30" :style="'font-size: ' + (fontSize * 0.5) + 'px'">
+                                <tr><th class="p-2 text-left">Día</th><th>Bus</th><th>Hora</th><th>Dieta</th><th>KM</th></tr>
+                            </thead>
+                            <tbody :style="'font-size: ' + (fontSize * 0.7) + 'px'">
+                                <template x-for="item in sem.dias" :key="item.fecha">
+                                    <tr class="border-t border-white/5">
+                                        <td class="p-2 text-left"><div class="text-white font-bold" x-text="formatF(item.fecha)"></div><div class="text-slate-500 uppercase font-extrabold" :style="'font-size: ' + (fontSize * 0.55) + 'px'" x-text="getDName(item.fecha)"></div></td>
+                                        <td class="text-yellow-500 font-black uppercase" x-text="item.bus"></td>
+                                        <td class="text-white font-black" x-text="item.hStr"></td>
+                                        <td class="text-green-400 font-bold" x-text="item.dieta"></td>
+                                        <td class="p-2 text-slate-400 font-medium" x-text="item.km"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <template x-if="screen === 4">
+        <div class="flex flex-col h-full p-4 space-y-6">
+            <header class="flex items-center gap-4">
+                <button @click="screen = 1" class="p-2 btn-press"><span class="material-symbols-rounded text-slate-400">arrow_back</span></button>
+                <h2 class="font-black uppercase tracking-widest text-white">Configuración</h2>
+            </header>
+
+            <div class="space-y-6 overflow-y-auto no-scrollbar pb-10">
+                <div class="glass-card p-5">
+                    <p class="font-bold text-slate-400 uppercase mb-4" :style="'font-size: ' + (fontSize * 0.7) + 'px'">Escala de la Interfaz</p>
+                    <div class="flex items-center justify-between">
+                        <button @click="changeFont(-1)" class="w-12 h-12 glass-card flex items-center justify-center btn-press"><span class="material-symbols-rounded">remove</span></button>
+                        <span class="text-2xl font-black text-blue-500" x-text="fontSize"></span>
+                        <button @click="changeFont(1)" class="w-12 h-12 glass-card flex items-center justify-center btn-press"><span class="material-symbols-rounded">add</span></button>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5">
+                    <p class="font-bold text-slate-400 uppercase mb-4" :style="'font-size: ' + (fontSize * 0.7) + 'px'">Fondo de Cuadros de Entrada</p>
+                    <div class="grid grid-cols-4 gap-3">
+                        <template x-for="c in palette" :key="c.hex">
+                            <button @click="accentColor = c.hex; saveSettings()" :style="'background-color: ' + c.hex" class="w-full aspect-square rounded-xl border-2 transition-all" :class="accentColor === c.hex ? 'border-white scale-110' : 'border-transparent'"></button>
+                        </template>
+                    </div>
+                </div>
+
+                <button @click="reset()" class="w-full p-4 glass-card text-red-500 font-black uppercase tracking-widest btn-press">Borrar Todos los Datos</button>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        function medBashaApp() {
+            return {
+                screen: 1, reloj: '', fechaSel: new Date().toISOString().split('T')[0],
+                mes: new Date().getMonth(), año: new Date().getFullYear(), mesNombre: '',
+                history: [], diasCalendario: [],
+                fontSize: 14, accentColor: 'rgba(15, 23, 42, 0.8)',
+                
+                palette: [
+                    { hex: 'rgba(15, 23, 42, 0.8)' }, { hex: 'rgba(10, 10, 10, 1)' },
+                    { hex: 'rgba(20, 45, 25, 0.9)' }, { hex: 'rgba(45, 25, 15, 0.9)' },
+                    { hex: 'rgba(65, 45, 10, 0.9)' }, { hex: 'rgba(30, 30, 30, 1)' },
+                    { hex: 'rgba(5, 10, 35, 0.9)' }, { hex: 'rgba(255, 255, 255, 0.05)' }
+                ],
+                
+                form: { esP: false, bus1: '', bus2: '', hE1: '', hS1: '', kI1: '', kF1: '', hE2: '', hS2: '', kI2: '', kF2: '', dietaComida: false, dietaCena: false },
+                res: { hT: '00:00', nH: 0, kmD: 0 }, totalMes: { h: 0, p: 0, d: 0, n: 0 },
+
+                init() {
+                    this.history = JSON.parse(localStorage.getItem('mb_final_v1')) || [];
+                    this.fontSize = parseInt(localStorage.getItem('mb_font') || '14');
+                    this.accentColor = localStorage.getItem('mb_color') || 'rgba(15, 23, 42, 0.8)';
+                    setInterval(() => {
+                        const n = new Date();
+                        this.reloj = n.getHours().toString().padStart(2,'0') + ':' + n.getMinutes().toString().padStart(2,'0');
+                    }, 1000);
+                    this.renderCal();
+                },
+
+                saveSettings() { localStorage.setItem('mb_font', this.fontSize); localStorage.setItem('mb_color', this.accentColor); },
+                changeFont(v) { this.fontSize += v; this.saveSettings(); },
+                renderCal() {
+                    const d = new Date(this.año, this.mes + 1, 0).getDate();
+                    this.mesNombre = new Intl.DateTimeFormat('es-ES', {month:'long'}).format(new Date(this.año, this.mes));
+                    this.diasCalendario = [];
+                    for(let i=1; i<=d; i++) {
+                        let f = `${this.año}-${String(this.mes+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                        this.diasCalendario.push({ num: i, fecha: f, isHoy: f === new Date().toISOString().split('T')[0] });
+                    }
+                },
+                seleccionarDia(f) { this.fechaSel = f; },
+                abrirRegistro(p) { this.form = { esP: p, bus1: '', bus2: '', hE1: '', hS1: '', kI1: '', kF1: '', hE2: '', hS2: '', kI2: '', kF2: '', dietaComida: false, dietaCena: false }; this.screen = 2; },
+                
+                calc() {
+                    const toM = (t) => { if(!t) return 0; let [h,m]=t.split(':').map(Number); return h*60+m; };
+                    let m1 = (toM(this.form.hS1) >= toM(this.form.hE1)) ? toM(this.form.hS1)-toM(this.form.hE1) : (toM(this.form.hS1)+1440)-toM(this.form.hE1);
+                    let m2 = this.form.esP ? ((toM(this.form.hS2) >= toM(this.form.hE2)) ? toM(this.form.hS2)-toM(this.form.hE2) : (toM(this.form.hS2)+1440)-toM(this.form.hE2)) : 0;
+                    let total = m1 + m2; if(total > 0 && total < 360) total = 360;
+                    this.res.hT = Math.floor(total/60).toString().padStart(2,'0')+':'+(total%60).toString().padStart(2,'0');
+                    this.res.kmD = (parseInt(this.form.kF1)-parseInt(this.form.kI1) || 0) + (this.form.esP ? (parseInt(this.form.kF2)-parseInt(this.form.kI2) || 0) : 0);
+                    
+                    // Lógica Automática (Híbrida con el botón manual)
+                    let hF = this.form.esP ? (this.form.hS2 || this.form.hS1) : this.form.hS1;
+                    if(hF === "15:00" || hF === "15:30") this.form.dietaComida = true;
+                    if(hF >= "23:00") this.form.dietaCena = true;
+                },
+
+                guardar() {
+                    // Supervisión obligatoria del Supervisor
+                    if(!this.form.bus1) { alert("⚠️ El Supervisor requiere el Nº BUS."); return; }
+                    this.calc();
+                    let dietaTotal = (this.form.dietaComida ? 1 : 0) + (this.form.dietaCena ? 1 : 0);
+                    this.history = this.history.filter(h => h.fecha !== this.fechaSel);
+                    this.history.push({
+                        fecha: this.fechaSel, bus: this.form.bus1, hStr: this.res.hT,
+                        dieta: dietaTotal, km: this.res.kmD, tipo: this.form.esP ? 'partida' : 'continua'
+                    });
+                    localStorage.setItem('mb_final_v1', JSON.stringify(this.history));
+                    this.screen = 3;
+                },
+
+                get historiaSemanas() {
+                    // Lógica de ciclo 16 al 15 (Menorca)
+                    let filtrado = this.history.filter(h => {
+                        let d = new Date(h.fecha); let m = d.getMonth(); let dia = d.getDate();
+                        let mesNom = (dia >= 16) ? (m + 1) % 12 : m;
+                        return mesNom === this.mes;
+                    }).sort((a,b) => a.fecha.localeCompare(b.fecha));
+
+                    this.totalMes = { h: 0, p: 0, d: 0, n: 0 };
+                    let sems = {};
+                    filtrado.forEach(h => {
+                        let d = new Date(h.fecha); 
+                        let wk = Math.ceil(d.getDate() / 7);
+                        if(!sems[wk]) sems[wk] = { num: wk, dias: [], tH: 0 };
+                        sems[wk].dias.push(h);
+                        let [hor,min] = h.hStr.split(':').map(Number);
+                        this.totalMes.h += (hor + min/60); 
+                        this.totalMes.d += h.dieta;
+                        sems[wk].tH += (hor + min/60);
+                        if(h.tipo === 'partida') this.totalMes.p++;
+                    });
+                    this.totalMes.h = this.totalMes.h.toFixed(2);
+                    return Object.values(sems).reverse();
+                },
+
+                cambiarMes(v) { this.mes += v; if(this.mes<0){this.mes=11;this.año--} if(this.mes>11){this.mes=0;this.año++} this.renderCal(); },
+                estadoDia(f) { return this.history.find(h => h.fecha === f)?.tipo || null; },
+                formatF(f) { return f.split('-')[2] + '/' + f.split('-')[1]; },
+                getDName(f) { return new Intl.DateTimeFormat('es-ES', {weekday:'short'}).format(new Date(f)); },
+                formatFechaLarga(f) { return new Intl.DateTimeFormat('es-ES', {weekday:'long', day:'numeric', month:'long'}).format(new Date(f)); },
+                compartir() { window.open(`https://wa.me/?text=Mi Resumen Med Basha: ${this.totalMes.h}h y ${this.totalMes.d} dietas.`); },
+                reset() { if(confirm("¿Borrar todo el historial?")) { localStorage.clear(); location.reload(); } }
+            }
+        }
+    </script>
+</body>
+</html>
